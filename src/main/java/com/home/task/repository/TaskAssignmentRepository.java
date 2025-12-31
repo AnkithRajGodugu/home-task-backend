@@ -12,5 +12,7 @@ import java.util.Optional;
 public interface TaskAssignmentRepository
         extends MongoRepository<TaskAssignment, String> {
     Optional<TaskAssignment> findByDateAndShift(LocalDate date, String shift);
+    Optional<TaskAssignment> findTopByShiftOrderByDateDescTimeDesc(String shift);
+
     List<TaskAssignment> findAllByOrderByDateDescTimeDesc();
 }

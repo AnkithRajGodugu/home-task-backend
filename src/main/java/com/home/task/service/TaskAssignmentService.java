@@ -102,21 +102,11 @@ public class TaskAssignmentService {
                         .toList()
         );
 
-        // 🔁 DAY-BASED SWAP LOGIC (FAIRNESS FIX)
-        // 🔁 SHIFT-AWARE SWAP (FAIRNESS FIX)
-        boolean swap = shouldSwapHelpers(today, shift);
+        // 🔁 HISTORY-BASED ROTATION
+        rotateHelpersUsingHistory(helpers, shift);
 
-        PersonDTO helper1 = helpers.get(0);
-        PersonDTO helper2 =
-                helpers.size() > 1 ? helpers.get(1) : helpers.get(0);
-
-        if (!swap) {
-            result.put("CUTTING", helper1.getName());
-            result.put("DISHES", helper2.getName());
-        } else {
-            result.put("CUTTING", helper2.getName());
-            result.put("DISHES", helper1.getName());
-        }
+        result.put("CUTTING", helpers.get(0).getName());
+        result.put("DISHES", helpers.get(1).getName());
 
         return saveOrUpdate(today, time, shift, team, result);
     }
@@ -142,12 +132,31 @@ public class TaskAssignmentService {
         return available.get(0); // safety fallback
     }
 
-    // 🔁 EVEN / ODD DAY → swap helpers
-    private boolean shouldSwapHelpers(LocalDate date, String shift) {
-        int hash = Objects.hash(date.toString(), shift.toLowerCase());
-        return hash % 2 == 0;
-    }
+    // 🔁 HISTORY-BASED HELPER ROTATION
+    private void rotateHelpersUsingHistory(
+            List<PersonDTO> helpers,
+            String shift
+    ) {
 
+        if (helpers.size() < 2) return;
+
+        Optional<TaskAssignment> last =
+                repo.findTopByShiftOrderByDateDescTimeDesc(shift);
+
+        if (last.isEmpty()) return;
+
+        Map<String, String> prev = last.get().getAssignments();
+
+        String prevCutting = prev.get("CUTTING");
+        String prevDishes = prev.get("DISHES");
+
+        // If same helpers are present → swap
+        if (helpers.get(0).getName().equals(prevCutting)
+                && helpers.get(1).getName().equals(prevDishes)) {
+
+            Collections.swap(helpers, 0, 1);
+        }
+    }
 
     // ✅ SAVE OR UPDATE (ONE RECORD PER DAY + SHIFT)
     private TaskAssignment saveOrUpdate(
