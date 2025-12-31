@@ -103,7 +103,8 @@ public class TaskAssignmentService {
         );
 
         // 🔁 DAY-BASED SWAP LOGIC (FAIRNESS FIX)
-        boolean swap = shouldSwapHelpers(today);
+        // 🔁 SHIFT-AWARE SWAP (FAIRNESS FIX)
+        boolean swap = shouldSwapHelpers(today, shift);
 
         PersonDTO helper1 = helpers.get(0);
         PersonDTO helper2 =
@@ -142,9 +143,11 @@ public class TaskAssignmentService {
     }
 
     // 🔁 EVEN / ODD DAY → swap helpers
-    private boolean shouldSwapHelpers(LocalDate date) {
-        return date.getDayOfMonth() % 2 == 0;
+    private boolean shouldSwapHelpers(LocalDate date, String shift) {
+        int hash = Objects.hash(date.toString(), shift.toLowerCase());
+        return hash % 2 == 0;
     }
+
 
     // ✅ SAVE OR UPDATE (ONE RECORD PER DAY + SHIFT)
     private TaskAssignment saveOrUpdate(
