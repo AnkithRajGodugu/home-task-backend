@@ -6,9 +6,11 @@ import com.home.task.repository.TaskAssignmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+//import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Service
 public class TaskAssignmentService {
@@ -25,9 +27,13 @@ public class TaskAssignmentService {
             String team
     ) {
 
-        LocalDate today = LocalDate.now();
-        String time = LocalTime.now()
-                .format(DateTimeFormatter.ofPattern("HH:mm"));
+
+
+        ZoneId IST = ZoneId.of("Asia/Kolkata");
+        ZonedDateTime now = ZonedDateTime.now(IST);
+
+        LocalDate today = now.toLocalDate();
+        String time = now.format(DateTimeFormatter.ofPattern("HH:mm"));
 
         List<PersonDTO> available = people.stream()
                 .filter(PersonDTO::isAvailable)
