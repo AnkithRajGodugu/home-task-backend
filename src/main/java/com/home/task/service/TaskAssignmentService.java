@@ -73,8 +73,9 @@ public class TaskAssignmentService {
             return saveOrUpdate(today, time, shift, team, result);
         }
 
-        // 👥 Exactly 2 → shared work
+        // 👥 Exactly 2 people → shared work
         if (workingSet.size() == 2) {
+
             String both =
                     workingSet.get(0).getName() +
                             " & " +
@@ -87,10 +88,11 @@ public class TaskAssignmentService {
             return saveOrUpdate(today, time, shift, team, result);
         }
 
-        // 👨‍🍳 Priority cook
+        // 👨‍🍳 Priority cook (ALWAYS fixed)
         PersonDTO cook = selectCookByPriority(workingSet);
         result.put("COOKING", cook.getName());
 
+        // 🧑‍🤝‍🧑 Helpers (excluding cook)
         List<PersonDTO> helpers = new ArrayList<>(nonCooks);
         helpers.addAll(
                 workingSet.stream()
@@ -100,18 +102,25 @@ public class TaskAssignmentService {
                         .toList()
         );
 
-        result.put("CUTTING", helpers.get(0).getName());
-        result.put(
-                "DISHES",
-                helpers.size() > 1
-                        ? helpers.get(1).getName()
-                        : helpers.get(0).getName()
-        );
+        // 🔁 DAY-BASED SWAP LOGIC (FAIRNESS FIX)
+        boolean swap = shouldSwapHelpers(today);
+
+        PersonDTO helper1 = helpers.get(0);
+        PersonDTO helper2 =
+                helpers.size() > 1 ? helpers.get(1) : helpers.get(0);
+
+        if (!swap) {
+            result.put("CUTTING", helper1.getName());
+            result.put("DISHES", helper2.getName());
+        } else {
+            result.put("CUTTING", helper2.getName());
+            result.put("DISHES", helper1.getName());
+        }
 
         return saveOrUpdate(today, time, shift, team, result);
     }
 
-    // 🔥 Cooking priority
+    // 🔥 Cooking priority (UNCHANGED)
     private PersonDTO selectCookByPriority(List<PersonDTO> available) {
 
         List<String> priority = List.of(
@@ -132,7 +141,12 @@ public class TaskAssignmentService {
         return available.get(0); // safety fallback
     }
 
-    // ✅ SAVE OR UPDATE (ONE PER DAY + SHIFT)
+    // 🔁 EVEN / ODD DAY → swap helpers
+    private boolean shouldSwapHelpers(LocalDate date) {
+        return date.getDayOfMonth() % 2 == 0;
+    }
+
+    // ✅ SAVE OR UPDATE (ONE RECORD PER DAY + SHIFT)
     private TaskAssignment saveOrUpdate(
             LocalDate date,
             String time,
